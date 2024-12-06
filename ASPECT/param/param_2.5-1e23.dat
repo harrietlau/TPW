@@ -1,0 +1,119 @@
+# ============================================================ #
+# TEMPLATE FOR MULTIPLE RUNS WHERE WE SWITCH INPUT PARAMTERS
+# DEPENDING ON MANAR'S RUNS.
+# Options to be switched out will be labeled "SWITCH"
+# in comment line above
+# ============================================================ #
+
+# ============================================================ #
+# GLOBAL INPUTS:
+set Dimension                              = 2
+set Use years in output instead of seconds = true
+set End time                               = 1e9 
+# SWITCH <Output directory>
+set Output directory                       = /oscar/data/hclau/hclau/out_2.5-1e23
+# ============================================================ #
+
+
+# ============================================================ #
+# GRID OPTIONS:
+subsection Geometry model
+  set Model name = spherical shell
+  subsection Spherical shell
+    set Inner radius  = 3480000
+    set Outer radius  = 6371000
+    set Opening angle = 360 
+  end
+end
+subsection Mesh refinement
+  set Initial global refinement                = 7 
+  set Initial adaptive refinement              = 0
+  set Time steps between mesh refinement       = 0
+end
+# ============================================================ #
+
+# ============================================================ #
+# MODEL PARAMETERS:
+subsection Gravity model
+  set Model name = radial constant 
+  subsection Radial constant
+    set Magnitude = 9.81
+  end
+end
+# SWITCH <Viscosity depth file>
+subsection Material model
+  set Model name = depth dependent
+  subsection Depth dependent model
+    set Base model = simple
+    set Depth dependence method = File
+    set Data directory = /users/hclau/TPW/viscosity/
+    set Viscosity depth file = visc_2.5-1e23.dat
+    set Reference viscosity = 1e23
+  end
+  subsection Simple model
+    set Reference density             = 4500
+    set Thermal expansion coefficient = 2.5e-5
+    set Viscosity                     = 1e23
+    set Reference specific heat       = 1000
+    set Thermal conductivity          = 4
+  end
+end
+# ============================================================ #
+
+# ============================================================ #
+# remove rotation
+subsection Nullspace removal
+  set Remove nullspace = net rotation
+end
+
+
+# ============================================================ #
+# INITIAL CONDITIONS
+# SWITCH <Function constants>
+subsection Initial temperature model
+  set Model name = function
+  subsection Function
+    set Coordinate system   = spherical
+    set Variable names      = r,phi 
+    set Function constants  = A=100, B=75, C=50, D=25, pi=3.1415926536, Ri=3480e3, Ro=6371e3, Ti=5500, To=1700
+    set Function expression = (r-Ri)/(Ro-Ri)*(To-Ti)+Ti + A*sin(7*phi) + B*sin(13*phi) + C*cos(0.123*phi+pi/3) + D*cos(0.456*phi+pi/6)
+  end
+end
+# ============================================================ #
+
+# ============================================================ #
+# BOUNDARY CONDITIONS
+subsection Boundary velocity model
+  set Zero velocity boundary indicators =
+  set Tangential velocity boundary indicators = top, bottom
+end
+# SWITCH <Inner temperature>, <Outer temperature>
+subsection Boundary temperature model
+  set Fixed temperature boundary indicators = top,bottom
+  set List of model names = spherical constant
+  subsection Spherical constant
+    set Inner temperature = 5000
+    set Outer temperature = 1600
+  end
+end
+# SWITCH <Radiogenic heating rate>
+#subsection Heating model
+#  set List of model names = constant heating
+#  subsection Constant heating
+#    set Radiogenic heating rate = 1.95e-11
+#  end
+#end
+# ============================================================ #
+
+# ============================================================ #
+# OUTPUT
+subsection Postprocess
+  set List of postprocessors = velocity statistics, temperature statistics, heat flux statistics, visualization, particles, basic statistics
+  subsection Visualization
+    set Time between graphical output = 1e6
+    set Output format = vtu
+    set List of output variables = material properties
+  end
+end
+# ============================================================ #
+
